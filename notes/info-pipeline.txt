@@ -1,0 +1,348 @@
+Apache Maven 3.6.3
+Java version: 1.8.0_211, vendor: Oracle Corporation
+Default locale: en_IN
+OS name: "windows 10", version: "10.0", arch: "amd64", family: "windows"
+
+======================================================================================================
+
+## Creating a Pipeline Job to Execute Maven
+
+1) Jenkins Dashboard > New Item > Pipeline > name: atmosphere-pipeline > OK
+
+2) Pipeline > Pipeline Syntax (New Window)
+    Sample Step - bat: Windows Batch Script (sh: Shell Script [Linux])
+    Batch Script -
+            mvn clean package
+
+    Generate Pipeline Script -
+        output : bat label: '', script: 'mvn clean package'
+
+3) Copy output from generated pipeline script, and return to original window
+
+    Pipeline -
+        Script : <<Paste>>
+                 bat label: '', script: 'mvn clean package'
+
+======================================================================================================
+
+## Archiving in a Pipeline
+
+1) Pipeline > Pipeline Syntax (New Window)
+       Sample Step - Choose step: General Build Step
+       Build Step - Choose Archive the artifacts
+       Files to archive - target/*.jar
+
+       Generate Pipeline Script -
+           output :
+                archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
+
+2) Copy and paste into original script
+
+======================================================================================================
+
+## Checking out a Git Repository in a Pipeline
+
+1) Pipeline > Pipeline Syntax (New Window)
+       Sample Step - Choose git: Git
+       Repository URL - https://github.com/parwezshariq/spring-boot-sample-atmosphere.git
+       Branch - develop
+
+       Generate Pipeline Script -
+           output :
+                git branch: 'develop', url: 'https://github.com/parwezshariq/spring-boot-sample-atmosphere.git'
+
+2) Copy and paste into original script
+
+======================================================================================================
+
+** SCRIPT BUILT **
+
+git branch: 'develop', url: 'https://github.com/parwezshariq/spring-boot-sample-atmosphere.git'
+
+bat label: '', script: 'mvn clean package'
+
+archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
+
+======================================================================================================
+
+BUILD NOW fails
+
+======================================================================================================
+
+## Allocating a Node and Workspace in a Pipeline
+
+1) Pipeline > Pipeline Syntax (New Window)
+       Sample Step - Choose node: Allocate node
+
+       Generate Pipeline Script -
+           output :
+                node {
+                    // some block
+                }
+
+2) Copy and paste into original script
+
+======================================================================================================
+
+** SCRIPT BUILT **
+
+node {
+    git branch: 'develop', url: 'https://github.com/parwezshariq/spring-boot-sample-atmosphere.git'
+
+    bat label: '', script: 'mvn clean package'
+
+    archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
+}
+
+======================================================================================================
+
+BUILD NOW IS SUCCESSFUL
+
+======================================================================================================
+
+## High-level Progress with Pipeline Stages
+
+1) Pipeline > Pipeline Syntax (New Window)
+       Sample Step - Choose stage: Stage
+       Stage Name - checkout
+
+       Generate Pipeline Script -
+           output :
+                stage('checkout') {
+                    // some block
+                }
+
+2) Copy and paste into original script
+
+3) Similarly use syntax for stage 'compiling, test, packaging', 'archival'
+
+======================================================================================================
+
+** SCRIPT BUILT **
+
+node {
+    stage('checkout') {
+        git branch: 'develop', url: 'https://github.com/parwezshariq/spring-boot-sample-atmosphere.git'
+    }
+
+    stage('compiling, test, packaging') {
+        bat label: '', script: 'mvn clean package'
+    }
+
+    stage('archival') {
+        archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
+    }
+}
+
+======================================================================================================
+
+## Triggering Automatic Builds
+
+1) atmosphere-pipeline > Configure > Build Triggers > Poll SCM (Select)
+        Schedule : * * * * * (i.e. CRON expression signifying every minute check)
+
+======================================================================================================
+
+## Configuring an Email Server
+
+1) Type 'config' in search box to open Jenkins configuration
+
+2) Move to 'Extended E-mail Notification' -
+
+        SMTP server: localhost
+        SMTP port: 8025
+        Default Content Type: Choose 'HTML(text/html)'
+
+** Setup mailhog on local -
+
+Download from - https://github.com/mailhog/MailHog/releases/download/v1.0.0/MailHog_windows_amd64.exe
+
+Run - MailHog_windows_amd64.exe
+
+Check if running - http://localhost:8025/
+
+======================================================================================================
+
+## Email Notification in a Pipeline
+
+1) Pipeline > Pipeline Syntax (New Window)
+       Sample Step - Choose emailext: Extended Email (Below is copied from https://git.io/vKSVZ)
+
+        ** Copied Content **
+
+        def notify(status){
+            emailext (
+                to: "shariqparwez@outlook.com",
+                subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+                body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+                        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+            )
+        }
+
+        # List of environment variables - atmosphere-pipeline > Pipeline Syntax > Global Variables Reference
+
+2) Copy and paste into original script
+
+======================================================================================================
+
+** SCRIPT BUILT **
+
+node {
+    notify('Started')
+
+    stage('checkout') {
+        git branch: 'develop', url: 'https://github.com/parwezshariq/spring-boot-sample-atmosphere.git'
+    }
+
+    stage('compiling, test, packaging') {
+        bat label: '', script: 'mvn clean package'
+    }
+
+    stage('archival') {
+        archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
+    }
+
+    notify('Done')
+}
+
+def notify(status) {
+    emailext (
+        to: "shariqparwez@outlook.com",
+        subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+        body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+            <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+======================================================================================================
+
+## Notifications When a Build Fails
+
+** SCRIPT BUILT **
+
+node {
+    notify('Started')
+
+    try {
+        stage('checkout') {
+            git branch: 'develop', url: 'https://github.com/parwezshariq/spring-boot-sample-atmosphere.git'
+        }
+
+        stage('compiling, test, packaging') {
+            bat label: '', script: 'mvn clean package'
+        }
+
+        stage('archival') {
+            archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
+        }
+
+        notify('Success')
+    } catch(err) {
+        notify("Error ${err}")
+        currentBuild.result = 'Failure'
+    }
+}
+
+def notify(status) {
+    emailext (
+        to: "shariqparwez@outlook.com",
+        subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+        body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+            <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+======================================================================================================
+
+## Duplicating a Job
+
+Follow along with https://github.com/parwezshariq/Spring-PetClinic.git repository
+
+1) Jenkins Dashboard > New Item > petclinic-pipeline (name) > Copy from 'atmosphere-pipeline'
+
+** SCRIPT BUILT [PETCLINIC] **
+
+node {
+    notify('Started')
+
+    try {
+        stage('checkout') {
+            git branch: 'master', url: 'https://github.com/parwezshariq/Spring-PetClinic.git'
+        }
+
+        stage('compiling, test, packaging') {
+            bat label: '', script: 'mvn clean package'
+        }
+
+        stage('archival') {
+            archiveArtifacts artifacts: 'target/*.?ar', followSymlinks: false
+        }
+
+        notify('Success')
+    } catch(err) {
+        notify("Error ${err}")
+        currentBuild.result = 'Failure'
+    }
+}
+
+def notify(status) {
+    emailext (
+        to: "shariqparwez@outlook.com",
+        subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+        body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+            <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+======================================================================================================
+
+## Visualizing Test Results [PETCLINIC]
+
+1) Pipeline > Pipeline Syntax (New Window)
+       Sample Step - Choose step: General Build Step
+       Build Step - Publish JUnit test result report
+       	Test report XMLs - target/surefire-reports/TEST-*.xml
+
+       Generate Pipeline Script -
+           output :
+                step([$class: 'JUnitResultArchiver', testResults: 'target/surefire-reports/TEST-*.xml'])
+
+2) Copy and paste into original script
+
+3) On running build now, build info will now contain link for 'Test Result'
+
+** SCRIPT BUILT [PETCLINIC] **
+
+node {
+    notify('Started')
+
+    try {
+        stage('checkout') {
+            git branch: 'master', url: 'https://github.com/parwezshariq/Spring-PetClinic.git'
+        }
+
+        stage('compiling, test, packaging') {
+            bat label: '', script: 'mvn clean package'
+        }
+
+        stage('archival') {
+            step([$class: 'JUnitResultArchiver', testResults: 'target/surefire-reports/TEST-*.xml'])
+            archiveArtifacts artifacts: 'target/*.?ar', followSymlinks: false
+        }
+
+        notify('Success')
+    } catch(err) {
+        notify("Error ${err}")
+        currentBuild.result = 'Failure'
+    }
+}
+
+def notify(status) {
+    emailext (
+        to: "shariqparwez@outlook.com",
+        subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+        body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+            <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+======================================================================================================

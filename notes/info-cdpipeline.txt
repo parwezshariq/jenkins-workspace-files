@@ -1,0 +1,529 @@
+Apache Maven 3.6.3
+Java version: 1.8.0_211, vendor: Oracle Corporation
+Default locale: en_IN
+OS name: "windows 10", version: "10.0", arch: "amd64", family: "windows"
+
+** Dependency on PhantomJS **
+
+======================================================================================================
+
+** SCRIPT **
+
+stage 'CI'
+node {
+
+    git branch: 'master',
+        url: 'https://github.com/parwezshariq/solitaire-systemjs.git'
+
+    // pull dependencies from npm
+    bat 'npm install'
+    //sh 'npm install'
+
+    // stash code & dependencies to expedite subsequent testing
+    // and ensure same code & dependencies are used throughout the pipeline
+    // stash is a temporary archive
+    stash name: 'everything',
+          excludes: 'test-results/**',
+          includes: '**'
+
+    // test with PhantomJS for "fast" "generic" results
+    bat 'npm run test-single-run -- --browsers PhantomJS'
+    //sh 'npm run test-single-run -- --browsers PhantomJS'
+
+    // archive karma test results (karma is configured to export junit xml files)
+    step([$class: 'JUnitResultArchiver',
+          testResults: 'test-results/**/test-results.xml'])
+
+}
+
+def notify(status){
+    emailext (
+      to: "shariqparwez@outlook.com",
+      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+======================================================================================================
+
+## Create Pipeline using above script
+
+1) Jenkins Dashboard > New Item > Pipeline > name: solitaire-pipeline > OK
+
+2) Pipeline Tab > Script - <Paste above script> > Save
+
+3) Build Now
+
+======================================================================================================
+
+## Second Node Allocation
+
+** SCRIPT UPDATE **
+
+stage 'CI'
+node {
+
+    git branch: 'master',
+        url: 'https://github.com/parwezshariq/solitaire-systemjs.git'
+
+    // pull dependencies from npm
+    bat 'npm install'
+    //sh 'npm install'
+
+    // stash code & dependencies to expedite subsequent testing
+    // and ensure same code & dependencies are used throughout the pipeline
+    // stash is a temporary archive
+    stash name: 'everything',
+          excludes: 'test-results/**',
+          includes: '**'
+
+    // test with PhantomJS for "fast" "generic" results
+    bat 'npm run test-single-run -- --browsers PhantomJS'
+    //sh 'npm run test-single-run -- --browsers PhantomJS'
+
+    // archive karma test results (karma is configured to export junit xml files)
+    step([$class: 'JUnitResultArchiver',
+          testResults: 'test-results/**/test-results.xml'])
+
+}
+
+// Adding second node
+node {
+    bat 'dir'
+    //sh 'ls'
+
+    bat 'del /S /Q *'
+    //sh 'rm -rf *'
+
+    unstash 'everything'
+
+    bat 'dir'
+    //sh 'ls'
+}
+
+def notify(status){
+    emailext (
+      to: "shariqparwez@outlook.com",
+      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+------------------------------------------------------------------------------------------------------
+
+Jenkins Dashboard > solitaire-pipeline > Configure > Pipeline Tab > Update Script > Save > Build Now
+
+======================================================================================================
+
+## Adding an Agent Node
+
+1) Jenkins Dashboard > Manage Jenkins > Manage Nodes and Clouds > New Node
+        Node name: agent1
+        Permanent Agent: [CHECK]
+
+        [OK]
+
+        # of executors:  2
+        Remote root directory: /tmp/jenkins-agent1
+        Labels: windows
+
+        [SAVE]
+
+2) Click agent1 > Go to security configuration screen and change it.
+        Agents
+            TCP port for inbound agents > Select Fixed: 50000
+
+3) Click agent1 > Download slave.jar
+        Copy command > java -jar agent.jar -jnlpUrl http://localhost:8080/computer/agent1/slave-agent.jnlp -secret 76ddd1bf5aa7511a2e92d0b8892c4e0bb88382cfae8aba3d5ff745e7956cc057 -workDir "/tmp/jenkins-agent1"
+        Execute it from command line
+
+        Navigate to nodes list, agent1 will be shown as active
+
+4) Update script
+        node('windows') {
+
+   ** SCRIPT UPDATE **
+
+   stage 'CI'
+   node {
+
+       git branch: 'master',
+           url: 'https://github.com/parwezshariq/solitaire-systemjs.git'
+
+       // pull dependencies from npm
+       bat 'npm install'
+       //sh 'npm install'
+
+       // stash code & dependencies to expedite subsequent testing
+       // and ensure same code & dependencies are used throughout the pipeline
+       // stash is a temporary archive
+       stash name: 'everything',
+             excludes: 'test-results/**',
+             includes: '**'
+
+       // test with PhantomJS for "fast" "generic" results
+       bat 'npm run test-single-run -- --browsers PhantomJS'
+       //sh 'npm run test-single-run -- --browsers PhantomJS'
+
+       // archive karma test results (karma is configured to export junit xml files)
+       step([$class: 'JUnitResultArchiver',
+             testResults: 'test-results/**/test-results.xml'])
+
+   }
+
+   // Adding second node
+   node('windows') {
+       bat 'dir'
+       //sh 'ls'
+
+       bat 'del /S /Q *'
+       //sh 'rm -rf *'
+
+       unstash 'everything'
+
+       bat 'dir'
+       //sh 'ls'
+   }
+
+   def notify(status){
+       emailext (
+         to: "shariqparwez@outlook.com",
+         subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+         body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+           <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+       )
+   }
+
+======================================================================================================
+
+## Setup Parallel Integration Testing in a Pipeline
+
+Update Script >
+
+//parallel integration testing
+stage 'Browser Testing'
+parallel chrome: {
+    runTests("Chrome")
+}, firefox: {
+    runTests("Firefox")
+}, safari: {
+    runTests("Safari")
+}
+
+def runTests(browser) {
+    node {
+        bat 'del /S /Q *'
+        //sh 'rm -rf *'
+
+        unstash 'everything'
+
+        bat "npm run test-single-run -- --browsers ${browser}"
+        //sh "npm run test-single-run -- --browsers ${browser}"
+
+        step([$class: 'JUnitResultArchiver',
+              testResults: 'test-results/**/test-results.xml'])
+    }
+}
+
+** UPDATED SCRIPT **
+
+stage 'CI'
+node {
+
+    git branch: 'master',
+        url: 'https://github.com/parwezshariq/solitaire-systemjs.git'
+
+    // pull dependencies from npm
+    bat 'npm install'
+    //sh 'npm install'
+
+    // stash code & dependencies to expedite subsequent testing
+    // and ensure same code & dependencies are used throughout the pipeline
+    // stash is a temporary archive
+    stash name: 'everything',
+          excludes: 'test-results/**',
+          includes: '**'
+
+    // test with PhantomJS for "fast" "generic" results
+    bat 'npm run test-single-run -- --browsers PhantomJS'
+    //sh 'npm run test-single-run -- --browsers PhantomJS'
+
+    // archive karma test results (karma is configured to export junit xml files)
+    step([$class: 'JUnitResultArchiver',
+          testResults: 'test-results/**/test-results.xml'])
+
+}
+
+// Adding second node
+node('windows') {
+    bat 'dir'
+    //sh 'ls'
+
+    bat 'del /S /Q *'
+    //sh 'rm -rf *'
+
+    unstash 'everything'
+
+    bat 'dir'
+    //sh 'ls'
+}
+
+//parallel integration testing
+stage 'Browser Testing'
+parallel chrome: {
+    runTests("Chrome")
+}, firefox: {
+    runTests("Firefox")
+}, safari: {
+    runTests("Safari")
+}
+
+def runTests(browser) {
+    node {
+        bat 'del /S /Q *'
+        //sh 'rm -rf *'
+
+        unstash 'everything'
+
+        bat "npm run test-single-run -- --browsers ${browser}"
+        //sh "npm run test-single-run -- --browsers ${browser}"
+
+        step([$class: 'JUnitResultArchiver',
+              testResults: 'test-results/**/test-results.xml'])
+    }
+}
+
+def notify(status){
+    emailext (
+      to: "shariqparwez@outlook.com",
+      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+======================================================================================================
+
+## Manual Approval for Deployments
+
+Update Script >
+
+node {
+    notify("Deploy to staging?")
+}
+
+input 'Deploy to staging?'
+
+** UPDATED SCRIPT **
+
+stage 'CI'
+node {
+
+    git branch: 'master',
+        url: 'https://github.com/parwezshariq/solitaire-systemjs.git'
+
+    // pull dependencies from npm
+    bat 'npm install'
+    //sh 'npm install'
+
+    // stash code & dependencies to expedite subsequent testing
+    // and ensure same code & dependencies are used throughout the pipeline
+    // stash is a temporary archive
+    stash name: 'everything',
+          excludes: 'test-results/**',
+          includes: '**'
+
+    // test with PhantomJS for "fast" "generic" results
+    bat 'npm run test-single-run -- --browsers PhantomJS'
+    //sh 'npm run test-single-run -- --browsers PhantomJS'
+
+    // archive karma test results (karma is configured to export junit xml files)
+    step([$class: 'JUnitResultArchiver',
+          testResults: 'test-results/**/test-results.xml'])
+
+}
+
+// Adding second node
+node('windows') {
+    bat 'dir'
+    //sh 'ls'
+
+    bat 'del /S /Q *'
+    //sh 'rm -rf *'
+
+    unstash 'everything'
+
+    bat 'dir'
+    //sh 'ls'
+}
+
+//parallel integration testing
+stage 'Browser Testing'
+parallel chrome: {
+    runTests("Chrome")
+}, firefox: {
+    runTests("Firefox")
+}, safari: {
+    runTests("Safari")
+}
+
+def runTests(browser) {
+    node {
+        bat 'del /S /Q *'
+        //sh 'rm -rf *'
+
+        unstash 'everything'
+
+        bat "npm run test-single-run -- --browsers ${browser}"
+        //sh "npm run test-single-run -- --browsers ${browser}"
+
+        step([$class: 'JUnitResultArchiver',
+              testResults: 'test-results/**/test-results.xml'])
+    }
+}
+
+node {
+    notify("Deploy to staging?")
+}
+
+input 'Deploy to staging?'
+
+def notify(status){
+    emailext (
+      to: "shariqparwez@outlook.com",
+      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+======================================================================================================
+
+## Setup Deployment to Staging
+
+Update Script >
+
+// limit concurrency so we don't perform simultaneous deploys
+// and if multiple pipelines are executing,
+// newest is only that will be allowed through, rest will be canceled
+stage name: 'Deploy to staging', concurrency: 1
+node {
+    // write build number to index page so we can see this update
+    bat "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
+    //sh "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
+
+    // deploy to a docker container mapped to port 3000
+    bat 'docker-compose up -d --build'
+    //sh 'docker-compose up -d --build'
+
+    notify 'Solitaire Deployed!'
+}
+
+** UPDATED SCRIPT **
+
+stage 'CI'
+node {
+
+    git branch: 'master',
+        url: 'https://github.com/parwezshariq/solitaire-systemjs.git'
+
+    // pull dependencies from npm
+    bat 'npm install'
+    //sh 'npm install'
+
+    // stash code & dependencies to expedite subsequent testing
+    // and ensure same code & dependencies are used throughout the pipeline
+    // stash is a temporary archive
+    stash name: 'everything',
+          excludes: 'test-results/**',
+          includes: '**'
+
+    // test with PhantomJS for "fast" "generic" results
+    bat 'npm run test-single-run -- --browsers PhantomJS'
+    //sh 'npm run test-single-run -- --browsers PhantomJS'
+
+    // archive karma test results (karma is configured to export junit xml files)
+    step([$class: 'JUnitResultArchiver',
+          testResults: 'test-results/**/test-results.xml'])
+
+}
+
+// Adding second node
+node('windows') {
+    bat 'dir'
+    //sh 'ls'
+
+    bat 'del /S /Q *'
+    //sh 'rm -rf *'
+
+    unstash 'everything'
+
+    bat 'dir'
+    //sh 'ls'
+}
+
+//parallel integration testing
+stage 'Browser Testing'
+parallel chrome: {
+    runTests("Chrome")
+}/*, firefox: {
+    runTests("Firefox")
+}, safari: {
+    runTests("Safari")
+}*/
+
+def runTests(browser) {
+    node {
+        bat 'del /S /Q *'
+        //sh 'rm -rf *'
+
+        unstash 'everything'
+
+        bat "npm run test-single-run -- --browsers ${browser}"
+        //sh "npm run test-single-run -- --browsers ${browser}"
+
+        step([$class: 'JUnitResultArchiver',
+              testResults: 'test-results/**/test-results.xml'])
+    }
+}
+
+node {
+    notify("Deploy to staging?")
+}
+
+input 'Deploy to staging?'
+
+// limit concurrency so we don't perform simultaneous deploys
+// and if multiple pipelines are executing,
+// newest is only that will be allowed through, rest will be canceled
+stage name: 'Deploy to staging', concurrency: 1
+node {
+    // write build number to index page so we can see this update
+    bat "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
+    //sh "echo '<h1>${env.BUILD_DISPLAY_NAME}</h1>' >> app/index.html"
+
+    // deploy to a docker container mapped to port 3000
+    bat 'docker-compose up -d --build'
+    //sh 'docker-compose up -d --build'
+
+    notify 'Solitaire Deployed!'
+}
+
+def notify(status){
+    emailext (
+      to: "shariqparwez@outlook.com",
+      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+        <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+======================================================================================================
+
+## Using JenkinsFile
+
+Configure > Pipeline Tab > Pipeline script from SCM
+
+======================================================================================================

@@ -1,0 +1,80 @@
+Apache Maven 3.6.3
+Java version: 1.8.0_211, vendor: Oracle Corporation
+Default locale: en_IN
+OS name: "windows 10", version: "10.0", arch: "amd64", family: "windows"
+
+======================================================================================================
+
+## Assessing a Plugin
+
+1) Jenkins Dashboard > Manage Jenkins > Manage Plugins > 'Available' tab
+    Search for 'HTML Publisher plugin'
+        Select 'HTML Publisher plugin' > Download now and install after restart
+
+======================================================================================================
+
+## Publishing HTML Reports
+
+1) Pipeline > Pipeline Syntax (New Window)
+       Sample Step - Choose publishHTML: Publish HTML reports
+       HTML directory to archive - target\site\jacoco\
+       Report title - Code Coverage
+       Keep past HTML reports [Checked]
+       Allow missing report [Checked]
+
+       Generate Pipeline Script -
+           output :
+                publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'target\\site\\jacoco\\', reportFiles: 'index.html', reportName: 'Code Coverage', reportTitles: ''])
+
+2) Copy and paste into original script
+
+3) After successful build, to check report published
+    Jenkins Dashboard > petclinic-pipeline > Code Coverage
+
+======================================================================================================
+
+** SCRIPT BUILT [PETCLINIC] **
+
+node {
+    notify('Started')
+
+    try {
+        stage('checkout') {
+            git branch: 'master', url: 'https://github.com/parwezshariq/Spring-PetClinic.git'
+        }
+
+        stage('compiling, test, packaging') {
+            bat label: '', script: 'mvn clean package'
+        }
+
+        stage('archival') {
+            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'target\\site\\jacoco\\', reportFiles: 'index.html', reportName: 'Code Coverage', reportTitles: ''])
+            step([$class: 'JUnitResultArchiver', testResults: 'target/surefire-reports/TEST-*.xml'])
+            archiveArtifacts artifacts: 'target/*.?ar', followSymlinks: false
+        }
+
+        notify('Success')
+    } catch(err) {
+        notify("Error ${err}")
+        currentBuild.result = 'Failure'
+    }
+}
+
+def notify(status) {
+    emailext (
+        to: "shariqparwez@outlook.com",
+        subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+        body: """<p>${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+            <p>Check console output at <a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>""",
+    )
+}
+
+======================================================================================================
+
+##  Change Success color to 'Green'
+
+1) Jenkins Dashboard > Manage Jenkins > Manage Plugins > 'Available' tab
+    Search for 'Green Balls'
+        Select 'Green Balls' > Download now and install after restart
+
+======================================================================================================

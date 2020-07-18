@@ -1,0 +1,52 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.39">
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.SCMTrigger>
+          <spec>* * * * *</spec>
+          <ignorePostCommitHooks>false</ignorePostCommitHooks>
+        </hudson.triggers.SCMTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.81">
+    <script>node {
+    notify(&apos;Started&apos;)
+    
+    try {
+        stage(&apos;checkout&apos;) {
+            git branch: &apos;develop&apos;, url: &apos;https://github.com/parwezshariq/spring-boot-sample-atmosphere.git&apos;
+        }
+    
+        stage(&apos;compiling, test, packaging&apos;) {
+            bat label: &apos;&apos;, script: &apos;mvn clean package&apos;
+        }
+    
+        stage(&apos;archival&apos;) {
+            archiveArtifacts artifacts: &apos;target/*.jar&apos;, followSymlinks: false
+        }
+    
+        notify(&apos;Success&apos;)    
+    } catch(err) {
+        notify(&quot;Error ${err}&quot;)
+        currentBuild.result = &apos;Failure&apos;
+    }
+}
+
+def notify(status) {
+    emailext (
+        to: &quot;shariqparwez@outlook.com&quot;,
+        subject: &quot;${status}: Job &apos;${env.JOB_NAME} [${env.BUILD_NUMBER}]&apos;&quot;,
+        body: &quot;&quot;&quot;&lt;p&gt;${status}: Job &apos;${env.JOB_NAME} [${env.BUILD_NUMBER}]&apos;:&lt;/p&gt;
+            &lt;p&gt;Check console output at &lt;a href=&apos;${env.BUILD_URL}&apos;&gt;${env.JOB_NAME} [${env.BUILD_NUMBER}]&lt;/a&gt;&lt;/p&gt;&quot;&quot;&quot;,
+    )
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

@@ -1,0 +1,130 @@
+﻿Apache Maven 3.6.3
+Java version: 1.8.0_211, vendor: Oracle Corporation
+Default locale: en_IN
+OS name: "windows 10", version: "10.0", arch: "amd64", family: "windows"
+
+======================================================================================================
+
+## Installing Jenkins
+
+1) Download war file from jenkins
+
+2) Trigger installation
+
+-> java -jar jenkins.war 	(This will start installation)
+
+-> Go to - localhost:8080	(Jenkins unlock screen will appear)
+ 
+Key for installing jenkins - 1d25ea925d0d4337aa28481179be3372 (Enter this key to activate jenkins)
+
+3) Setup account
+
+Username:		shariqparwez
+Password:		••••••••
+Confirm password:	•••••••• (password)
+Full name:		Shariq Parwez
+E-mail address:		shariqparwez@outlook.com
+
+======================================================================================================
+
+## Get Project
+
+1) https://github.com/parwezshariq/spring-boot-sample-atmosphere.git (Checkout code's Develop branch for initial setup)
+
+2) Import in IntelliJ as Maven project
+
+3) Do maven - clean, compile, test, package
+
+======================================================================================================
+
+## Create Jenkins Build Job for compiling project
+
+1) Restart jenkins (java -jar jenkins.war) and login
+
+2) Create new job > Freestyle project > name: atmosphere > OK
+
+3) Configure > Source Code Management > Choose Git
+
+    Repositories -
+
+        Repository URL - https://github.com/parwezshariq/spring-boot-sample-atmosphere.git
+
+    Branches to build -
+
+        Branch Specifier (blank for 'any') - */develop
+
+4) Configure > Build > Choose 'Invoke top-level Maven targets'
+
+    Goals - compile
+
+====================================================================================================
+
+## Peeking into the Jenkins Workspace
+
+Jenkins workspace location - C:\Users\shariqparwez\.jenkins\workspace\atmosphere
+
+====================================================================================================
+
+## Browsing the Workspace in Jenkins
+
+Jenkins Home Page > atmosphere > workspace
+
+====================================================================================================
+
+## App Packaging in Jenkins
+
+1) atmosphere > Configure > Build > Update 'Invoke top-level Maven targets'
+
+    Goals - package
+        > Apply > Save
+
+2) Select 'Build Now'
+
+====================================================================================================
+
+## Archiving Artifacts
+
+1) atmosphere > Configure > Post-build Actions > Choose 'Archive the artifacts'
+
+    Files to archive - target/*.jar
+        > Apply > Save
+
+2) Select 'Build Now'
+
+====================================================================================================
+
+## Cleaning up Past Builds
+
+1) atmosphere > Configure > Build > Update 'Invoke top-level Maven targets'
+
+    Goals - clean package
+        > Apply > Save
+
+2) Select 'Build Now'
+
+====================================================================================================
+
+## Challenge and Importing Job config.xml Files
+
+1) Navigate to C:\Users\shariqparwez\.jenkins\jobs > atmosphere
+    Copy - config.xml
+
+2) Navigate to C:\Users\shariqparwez\.jenkins\jobs
+    Make new folder - atmosphereCopy
+
+    Navigate to C:\Users\shariqparwez\.jenkins\jobs > atmosphereCopy
+    Paste - config.xml
+
+3) Jenkins Dashboard > Manage Jenkins > Reload Configuration from Disk
+
+====================================================================================================
+
+## Check for logs
+
+Jenkins Dashboard > Manage Jenkins > System Log > All Jenkins Logs
+
+====================================================================================================
+
+
+
+
